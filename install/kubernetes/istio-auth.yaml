@@ -264,7 +264,7 @@ spec:
         - name: config-volume
           mountPath: /etc/statsd
       - name: mixer
-        image: docker.io/istio/mixer:0.4.0
+        image: docker.io/yakooza/mixer:0.4.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9091

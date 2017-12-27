@@ -15,9 +15,12 @@
 package stdio // import "istio.io/istio/mixer/adapter/stdio"
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"sort"
 	"time"
 
@@ -60,6 +63,14 @@ func (h *handler) HandleLogEntry(_ context.Context, instances []*logentry.Instan
 			if value, ok := instance.Variables[varName]; ok {
 				fields = append(fields, field(varName, value))
 			}
+		}
+
+		bytes := new(bytes.Buffer)
+		json.NewEncoder(bytes).Encode(fields)
+		_, err := http.Post("http://kite/traffic-logs", "application/json;charset=utf-8", bytes)
+
+		if err != nil {
+			errors = multierror.Append(errors, err)
 		}
 
 		if err := h.logger.Core().Write(entry, fields); err != nil {
