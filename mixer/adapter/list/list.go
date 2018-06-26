@@ -19,8 +19,10 @@
 package list // import "istio.io/istio/mixer/adapter/list"
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -89,10 +91,16 @@ func (h *handler) HandleListEntry(_ context.Context, entry *listentry.Instance) 
 		if found {
 			code = rpc.PERMISSION_DENIED
 			msg = fmt.Sprintf("%s is blacklisted", entry.Value)
+			updateKite(entry.Name, entry.Value, "deny", h)
+		} else {
+			updateKite(entry.Name, entry.Value, "allow", h)
 		}
 	} else if !found {
 		code = rpc.NOT_FOUND
 		msg = fmt.Sprintf("%s is not whitelisted", entry.Value)
+		updateKite(entry.Name, entry.Value, "deny", h)
+	} else {
+		updateKite(entry.Name, entry.Value, "allow", h)
 	}
 
 	return adapter.CheckResult{
@@ -100,6 +108,23 @@ func (h *handler) HandleListEntry(_ context.Context, entry *listentry.Instance) 
 		ValidDuration: h.config.CachingInterval,
 		ValidUseCount: h.config.CachingUseCount,
 	}, nil
+}
+
+func updateKite(dst string, src string, action string, h *handler) {
+	fields := make(map[string]string)
+	fields["src"] = src
+	fields["dst"] = dst
+	fields["action"] = action
+
+	bytes := new(bytes.Buffer)
+	json.NewEncoder(bytes).Encode(fields)
+	_, err := http.Post("http://kite/traffic-actions", "application/json;charset=utf-8", bytes)
+
+	if err != nil {
+		h.log.Infof("Log not sent to kite: %v", err)
+	} else {
+		h.log.Infof("Log sent to kite")
+	}
 }
 
 func (h *handler) Close() error {
