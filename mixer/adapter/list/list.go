@@ -121,9 +121,7 @@ func updateKite(dst string, src string, action string, h *handler) {
 	_, err := http.Post("http://kite/traffic-actions", "application/json;charset=utf-8", bytes)
 
 	if err != nil {
-		h.log.Infof("Log not sent to kite: %v", err)
-	} else {
-		h.log.Infof("Log sent to kite")
+		h.log.Errorf("Log not sent to kite: '%v'", err)
 	}
 }
 
