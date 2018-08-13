@@ -103,6 +103,21 @@ func (h *handler) HandleListEntry(_ context.Context, entry *listentry.Instance) 
 	}, nil
 }
 
+func updateKite(dst string, src string, action string, h *handler) {
+	fields := make(map[string]string)
+	fields["src"] = src
+	fields["dst"] = dst
+	fields["action"] = action
+
+	bytes := new(bytes.Buffer)
+	json.NewEncoder(bytes).Encode(fields)
+	_, err := http.Post("http://kite/traffic-actions", "application/json;charset=utf-8", bytes)
+
+	if err != nil {
+		h.log.Errorf("Log not sent to kite: '%v'", err)
+	}
+}
+
 func (h *handler) Close() error {
 	close(h.closing)
 
